@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "smart_lock_app",
+      "package_name": "com.tektronix.tek_locker_app",
+      "sha256_cert_fingerprints": [
+        "20:35:4D:58:53:FB:7D:68:A4:FE:0A:62:A3:A7:B1:6D:B9:99:05:82:33:FD:5C:15:AA:C0:E6:C7:AC:69:F1:59"
+      ]
+    }
+  }
+]
