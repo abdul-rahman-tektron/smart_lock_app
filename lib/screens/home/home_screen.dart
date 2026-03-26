@@ -8,6 +8,7 @@ import 'package:smart_lock_app/res/colors.dart';
 import 'package:smart_lock_app/res/fonts.dart';
 import 'package:smart_lock_app/screens/home/home_notifier.dart';
 import 'package:smart_lock_app/utils/routes.dart';
+import 'package:smart_lock_app/utils/widgets/loader.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -48,8 +49,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ),
-              SingleChildScrollView(
-                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 14.h),
+              Padding(
+                padding: EdgeInsets.only(left: 8.w, right: 8.w, top: 14.h),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -57,7 +58,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     12.verticalSpace,
                     _summarySection(notifier),
                     16.verticalSpace,
-                    _tabSection(notifier),
+                    Expanded(
+                      child: _tabSection(notifier),
+                    ),
                   ],
                 ),
               ),
@@ -182,7 +185,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       child: const Center(
-        child: CircularProgressIndicator(),
+        child: DotCircleSpinner(size: 30, color: AppColors.primary, dotSize: 2.5,),
       ),
     );
   }
@@ -262,7 +265,9 @@ class _HomeScreenState extends State<HomeScreen> {
           decoration: BoxDecoration(
             color: AppColors.white,
             borderRadius: BorderRadius.circular(14.r),
-            border: Border.all(color: AppColors.primary.withOpacity(0.15),)
+            border: Border.all(
+              color: AppColors.primary.withOpacity(0.15),
+            ),
           ),
           child: TabBar(
             indicator: BoxDecoration(
@@ -282,8 +287,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         10.verticalSpace,
-        SizedBox(
-          height: 420.h,
+        Expanded(
           child: TabBarView(
             children: [
               _deliveryList(
@@ -310,7 +314,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }) {
     if (notifier.isLoading) {
       return const Center(
-        child: CircularProgressIndicator(),
+        child: DotCircleSpinner(size: 60, color: AppColors.primary, dotSize: 5,),
       );
     }
 
@@ -339,6 +343,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return ListView.separated(
       itemCount: deliveries.length,
       padding: EdgeInsets.zero,
+      
       separatorBuilder: (_, __) => 8.verticalSpace,
       itemBuilder: (context, index) {
         final item = deliveries[index];

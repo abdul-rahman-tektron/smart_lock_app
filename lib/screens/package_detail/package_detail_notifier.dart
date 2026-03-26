@@ -2,7 +2,7 @@ import 'package:intl/intl.dart';
 import 'package:smart_lock_app/core/base/base_notifier.dart';
 
 class PackageDetailNotifier extends BaseChangeNotifier {
-  final String packageId;
+  int? packageId;
 
   PackageDetailNotifier(this.packageId) {
     loadPackageDetail();

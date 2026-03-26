@@ -12,6 +12,7 @@ import 'package:smart_lock_app/screens/reset_password/reset_password_screen.dart
 import 'package:smart_lock_app/screens/settings/add_member/add_member_screen.dart';
 import 'package:smart_lock_app/screens/settings/change_password/change_password_screen.dart';
 import 'package:smart_lock_app/screens/settings/edit_profile/edit_profile_screen.dart';
+import 'package:smart_lock_app/screens/settings/help_support/help_support_screen.dart';
 import 'package:smart_lock_app/screens/settings/manage_member/manage_member_screen.dart';
 import 'package:smart_lock_app/screens/settings/request_flat_change/request_flat_change_screen.dart';
 import 'package:smart_lock_app/screens/settings/settings_screen.dart';
@@ -29,6 +30,7 @@ class AppRoutes {
   static const String resetPassword = '/reset-password';
   static const String otpVerification = '/otp-verification';
   static const String packageDetail = '/package-detail';
+  static const String helpSupport = '/help-support';
   static const String editProfile = '/edit-profile';
   static const String changePassword = '/change-password';
   static const String addMember = '/add-member';
@@ -103,10 +105,12 @@ class AppRouter {
 
       case AppRoutes.packageDetail:
         final args = settings.arguments as Map<String, dynamic>? ?? {};
-        final packageId = args['packageId'] as String?;
+        final packageId = args['packageId'] as int?;
         screen = PackageDetailScreen(packageId: packageId);
         break;
 
+      case AppRoutes.helpSupport:
+        return MaterialPageRoute(builder: (_) => const HelpSupportScreen());
       // Default
       default:
         screen = const NotFoundScreen();

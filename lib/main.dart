@@ -53,39 +53,41 @@ class MyApp extends StatelessWidget {
             designSize: const Size(375, 812),
             minTextAdapt: true,
             splitScreenMode: true,
-            child: MaterialApp(
-              debugShowCheckedModeBanner: false,
-              navigatorKey: MyApp.navigatorKey,
-              title: 'Smart Locker App',
-              locale: langNotifier.locale,
-              supportedLocales: const [
-                Locale('en'),
-                Locale('ar'),
-              ],
-              localizationsDelegates: const [
-                AppLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-              ],
-              initialRoute: _resolveInitialRoute(),
-              onGenerateRoute: AppRouter.onGenerateRoute,
-              theme: AppThemes.lightTheme(
-                languageCode: langNotifier.locale.languageCode,
-              ),
-              builder: (context, child) {
-                ScreenSize.init(context);
+            builder: (context, child) {
+              return MaterialApp(
+                debugShowCheckedModeBanner: false,
+                navigatorKey: MyApp.navigatorKey,
+                title: 'Smart Locker App',
+                locale: langNotifier.locale,
+                supportedLocales: const [
+                  Locale('en'),
+                  Locale('ar'),
+                ],
+                localizationsDelegates: const [
+                  AppLocalizations.delegate,
+                  GlobalMaterialLocalizations.delegate,
+                  GlobalWidgetsLocalizations.delegate,
+                  GlobalCupertinoLocalizations.delegate,
+                ],
+                initialRoute: _resolveInitialRoute(),
+                onGenerateRoute: AppRouter.onGenerateRoute,
+                theme: AppThemes.lightTheme(
+                  languageCode: langNotifier.locale.languageCode,
+                ),
+                builder: (context, child) {
+                  ScreenSize.init(context);
 
-                final mediaQueryData = MediaQuery.of(context);
-                final pixelRatio = mediaQueryData.devicePixelRatio;
-                final textScale = pixelRatio > 3.0 ? 0.8 : 1.0;
+                  final mediaQueryData = MediaQuery.of(context);
+                  final pixelRatio = mediaQueryData.devicePixelRatio;
+                  final textScale = pixelRatio > 3.0 ? 0.8 : 1.0;
 
-                return MediaQuery(
-                  data: mediaQueryData.copyWith(textScaleFactor: textScale),
-                  child: child ?? const SizedBox.shrink(),
-                );
-              },
-            ),
+                  return MediaQuery(
+                    data: mediaQueryData.copyWith(textScaleFactor: textScale),
+                    child: child ?? const SizedBox.shrink(),
+                  );
+                },
+              );
+            },
           );
         },
       ),

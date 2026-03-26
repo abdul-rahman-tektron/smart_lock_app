@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:smart_lock_app/core/base/base_notifier.dart';
+import 'package:smart_lock_app/utils/widgets/custom_toast.dart';
 
 class RequestFlatChangeNotifier extends BaseChangeNotifier {
   final formKey = GlobalKey<FormState>();
@@ -45,10 +46,7 @@ class RequestFlatChangeNotifier extends BaseChangeNotifier {
     if (!validateAndSave()) return;
 
     FocusScope.of(context).unfocus();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Flat change request submitted')),
-    );
+    ToastHelper.showSuccess('Flat change request submitted');
   }
 
   @override

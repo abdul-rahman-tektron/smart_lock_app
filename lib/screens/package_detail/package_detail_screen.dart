@@ -8,9 +8,10 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:smart_lock_app/res/colors.dart';
 import 'package:smart_lock_app/res/fonts.dart';
 import 'package:smart_lock_app/screens/package_detail/package_detail_notifier.dart';
+import 'package:smart_lock_app/utils/widgets/custom_toast.dart';
 
 class PackageDetailScreen extends StatelessWidget {
-  final String? packageId;
+  final int? packageId;
 
   const PackageDetailScreen({
     super.key,
@@ -20,7 +21,7 @@ class PackageDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => PackageDetailNotifier(packageId ?? ""),
+      create: (_) => PackageDetailNotifier(packageId ?? 0),
       child: Consumer<PackageDetailNotifier>(
         builder: (context, notifier, _) => _buildBody(context, notifier),
       ),
@@ -247,9 +248,7 @@ class PackageDetailScreen extends StatelessWidget {
             onTap: () async {
               await Clipboard.setData(ClipboardData(text: notifier.pickupCode));
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Pickup code copied")),
-                );
+                ToastHelper.showInfo("Pickup code copied");
               }
             },
             child: Container(

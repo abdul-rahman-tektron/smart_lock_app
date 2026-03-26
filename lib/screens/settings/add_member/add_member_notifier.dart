@@ -73,9 +73,6 @@ class AddMemberNotifier extends BaseChangeNotifier {
 
     FocusScope.of(context).unfocus();
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Member added successfully')),
-    );
   }
 
   @override

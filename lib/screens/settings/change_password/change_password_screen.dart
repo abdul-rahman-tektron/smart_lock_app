@@ -63,7 +63,7 @@ class ChangePasswordScreen extends StatelessWidget {
                       hintText: "Enter current password",
                       icon: LucideIcons.lock,
                       obscureText: !notifier.isCurrentPasswordVisible,
-                      validator: notifier.validatePassword,
+                      validator: notifier.validateCurrentPassword,
                       suffixIcon: IconButton(
                         onPressed: notifier.toggleCurrentPasswordVisibility,
                         icon: Icon(

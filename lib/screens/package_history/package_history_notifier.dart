@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:smart_lock_app/core/base/base_notifier.dart';
+import 'package:smart_lock_app/core/model/error_response.dart';
+import 'package:smart_lock_app/core/model/package/package_list_response.dart';
+import 'package:smart_lock_app/core/remote/services/common_repository.dart';
 import 'package:smart_lock_app/res/colors.dart';
 
 class PackageHistoryNotifier extends BaseChangeNotifier {
@@ -28,76 +31,50 @@ class PackageHistoryNotifier extends BaseChangeNotifier {
   String? selectedStatus = "All";
   String? selectedBoxSize = "All";
 
+  bool isLoading = false;
+  String errorMessage = "";
+
   int currentPage = 1;
   final int pageSize = 10;
 
-  final List<PackageHistoryItem> _allPackages = [
-    PackageHistoryItem(
-      title: "Package Received",
-      lockerSize: "Medium",
-      receiver: "Abdul Rahman",
-      deliveredAt: "2026-03-10 14:46:00",
-      statusAt: "2026-03-10 20:00:00",
-      status: "Active",
-      referenceId: "DLV-10234",
-      deliveredBy: "*****3214",
-    ),
-    PackageHistoryItem(
-      title: "Package Received",
-      lockerSize: "Large",
-      receiver: "Abdul Rahman",
-      deliveredAt: "2026-03-09 13:20:00",
-      statusAt: "2026-03-10 21:00:00",
-      status: "Overdue",
-      referenceId: "DLV-10235",
-      deliveredBy: "*****8741",
-    ),
-    PackageHistoryItem(
-      title: "Package Collected",
-      lockerSize: "Small",
-      receiver: "Abdul Rahman",
-      deliveredAt: "2026-03-10 09:00:00",
-      statusAt: "2026-03-10 11:10:00",
-      status: "Used",
-      referenceId: "DLV-10228",
-      deliveredBy: "*****9921",
-    ),
-    PackageHistoryItem(
-      title: "Delivery Expired",
-      lockerSize: "Medium",
-      receiver: "Abdul Rahman",
-      deliveredAt: "2026-03-08 14:46:00",
-      statusAt: "2026-03-09 22:00:00",
-      status: "Expired",
-      referenceId: "DLV-10220",
-      deliveredBy: "*****4408",
-    ),
-    PackageHistoryItem(
-      title: "Package Received",
-      lockerSize: "Large",
-      receiver: "Abdul Rahman",
-      deliveredAt: "2026-03-07 12:15:00",
-      statusAt: "2026-03-07 19:00:00",
-      status: "Used",
-      referenceId: "DLV-10210",
-      deliveredBy: "*****1245",
-    ),
-    PackageHistoryItem(
-      title: "Package Received",
-      lockerSize: "Small",
-      receiver: "Abdul Rahman",
-      deliveredAt: "2026-03-06 08:05:00",
-      statusAt: "2026-03-06 18:00:00",
-      status: "Expired",
-      referenceId: "DLV-10208",
-      deliveredBy: "*****9987",
-    ),
-  ];
-
-  List<PackageHistoryItem> filteredPackages = [];
+  List<PackageListDataItem> allPackages = [];
+  List<PackageListDataItem> filteredPackages = [];
 
   PackageHistoryNotifier() {
-    filteredPackages = List.from(_allPackages);
+    loadPackageHistory();
+  }
+
+  Future<void> loadPackageHistory() async {
+    isLoading = true;
+    errorMessage = "";
+    notifyListeners();
+
+    try {
+      getSavedUser();
+      final receiverId = user?.tenantId?.toString();
+
+      final result = await CommonRepository.instance.apiPackageList(
+        receiverId: receiverId,
+        pageNumber: 1,
+        pageSize: 500,
+      );
+
+      if (result is PackageListResponse && result.success == true) {
+        allPackages = result.data?.items ?? [];
+        filteredPackages = List.from(allPackages);
+      } else if (result is PackageListResponse) {
+        errorMessage = result.message ?? "Failed to load package history";
+      } else if (result is ErrorResponse) {
+        errorMessage = result.message ?? "Failed to load package history";
+      } else {
+        errorMessage = "Failed to load package history";
+      }
+    } catch (_) {
+      errorMessage = "Something went wrong";
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
   }
 
   int get totalPages {
@@ -105,7 +82,7 @@ class PackageHistoryNotifier extends BaseChangeNotifier {
     return (filteredPackages.length / pageSize).ceil();
   }
 
-  List<PackageHistoryItem> get currentPageItems {
+  List<PackageListDataItem> get currentPageItems {
     if (filteredPackages.isEmpty) return [];
 
     final start = (currentPage - 1) * pageSize;
@@ -118,16 +95,16 @@ class PackageHistoryNotifier extends BaseChangeNotifier {
   }
 
   int get activeCount =>
-      _allPackages.where((e) => e.status == "Active").length;
+      allPackages.where((e) => (e.statusId ?? 0) == 1).length;
 
   int get overdueCount =>
-      _allPackages.where((e) => e.status == "Overdue").length;
+      allPackages.where((e) => (e.statusId ?? 0) == 2).length;
 
   int get usedCount =>
-      _allPackages.where((e) => e.status == "Used").length;
+      allPackages.where((e) => (e.statusId ?? 0) == 3).length;
 
   int get expiredCount =>
-      _allPackages.where((e) => e.status == "Expired").length;
+      allPackages.where((e) => (e.statusName ?? "").toLowerCase() == "expired").length;
 
   void onSearchChanged(String value) {
     applyFilters();
@@ -189,19 +166,22 @@ class PackageHistoryNotifier extends BaseChangeNotifier {
       }
     } catch (_) {}
 
-    filteredPackages = _allPackages.where((item) {
-      final deliveredDate = DateTime.tryParse(item.deliveredAt);
+    filteredPackages = allPackages.where((item) {
+      final deliveredDate = item.createdOn;
 
-      final matchesSearch = search.isEmpty ||
-          item.referenceId.toLowerCase().contains(search);
+      final packageId = (item.lockerDetailId?.toString() ?? "").toLowerCase();
 
+      final matchesSearch = search.isEmpty || packageId.contains(search);
+
+      final itemStatus = getStatusLabel(item);
       final matchesStatus = selectedStatus == null ||
           selectedStatus == "All" ||
-          item.status == selectedStatus;
+          itemStatus == selectedStatus;
 
+      final itemBoxSize = getBoxSizeLabel(item);
       final matchesBoxSize = selectedBoxSize == null ||
           selectedBoxSize == "All" ||
-          item.lockerSize == selectedBoxSize;
+          itemBoxSize == selectedBoxSize;
 
       final matchesFromDate = fromDate == null ||
           (deliveredDate != null &&
@@ -232,7 +212,7 @@ class PackageHistoryNotifier extends BaseChangeNotifier {
     toDateController.clear();
     selectedStatus = "All";
     selectedBoxSize = "All";
-    filteredPackages = List.from(_allPackages);
+    filteredPackages = List.from(allPackages);
     currentPage = 1;
     notifyListeners();
   }
@@ -251,36 +231,81 @@ class PackageHistoryNotifier extends BaseChangeNotifier {
     }
   }
 
-  String formatDate(String? date) {
-    if (date == null || date.isEmpty) return "--";
+  String formatDate(DateTime? date) {
+    if (date == null) return "--";
 
     try {
-      final parsed = DateTime.parse(date);
-      return DateFormat('dd-MM-yyyy, hh:mm a').format(parsed);
+      return DateFormat('dd-MM-yyyy, hh:mm a').format(date);
     } catch (_) {
       return "--";
     }
   }
 
-  String timelineLabel(PackageHistoryItem item) {
-    final formatted = formatDate(item.statusAt);
+  String getStatusLabel(PackageListDataItem item) {
+    switch (item.statusId) {
+      case 1:
+        return "Active";
+      case 2:
+        return "Overdue";
+      case 3:
+        return "Used";
+      default:
+        final status = item.statusName?.trim();
+        if (status == null || status.isEmpty) return "--";
+        return status;
+    }
+  }
 
-    switch (item.status.toLowerCase()) {
+  String getBoxSizeLabel(PackageListDataItem item) {
+    switch (item.lockerSizeId) {
+      case 1:
+        return "Small";
+      case 2:
+        return "Medium";
+      case 3:
+        return "Large";
+      default:
+        return "--";
+    }
+  }
+
+  String getReceiverName(PackageListDataItem item) {
+    return user?.fullName ?? "--";
+  }
+
+  String getDeliveredBy(PackageListDataItem item) {
+    return item.deliveryAgentId?.toString() ?? "--";
+  }
+
+  String getReferenceId(PackageListDataItem item) {
+    return item.lockerDetailId?.toString() ?? "--";
+  }
+
+  String timelineLabel(PackageListDataItem item) {
+    final formatted = formatDate(item.verifiedOn is DateTime ? item.verifiedOn : item.createdOn);
+    final status = getStatusLabel(item).toLowerCase();
+
+    switch (status) {
       case "active":
-        return "Pickup before $formatted";
+        return "Pickup before \n$formatted";
       case "overdue":
-        return "Overdue since $formatted";
+        return "Overdue since \n$formatted";
       case "used":
-        return "Collected on $formatted";
+        return "Collected on \n$formatted";
       case "expired":
-        return "Expired on $formatted";
+        return "Expired on \n$formatted";
       default:
         return formatted;
     }
   }
 
-  Color timelineColor(PackageHistoryItem item) {
-    switch (item.status.toLowerCase()) {
+  String deliveredOnLabel(PackageListDataItem item) {
+    final formatted = formatDate(item.verifiedOn is DateTime ? item.verifiedOn : item.createdOn);
+    return formatted;
+  }
+
+  Color timelineColor(PackageListDataItem item) {
+    switch (getStatusLabel(item).toLowerCase()) {
       case "overdue":
         return Colors.orange;
       case "expired":
@@ -300,26 +325,4 @@ class PackageHistoryNotifier extends BaseChangeNotifier {
     horizontalScrollController.dispose();
     super.dispose();
   }
-}
-
-class PackageHistoryItem {
-  final String title;
-  final String lockerSize;
-  final String receiver;
-  final String deliveredAt;
-  final String statusAt;
-  final String status;
-  final String referenceId;
-  final String deliveredBy;
-
-  PackageHistoryItem({
-    required this.title,
-    required this.lockerSize,
-    required this.receiver,
-    required this.deliveredAt,
-    required this.statusAt,
-    required this.status,
-    required this.referenceId,
-    required this.deliveredBy,
-  });
 }

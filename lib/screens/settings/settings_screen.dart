@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
+import 'package:smart_lock_app/core/model/login/login_response.dart';
+import 'package:smart_lock_app/core/notifier/user_cache_notifier.dart';
+import 'package:smart_lock_app/res/api_constants.dart';
 import 'package:smart_lock_app/res/colors.dart';
 import 'package:smart_lock_app/res/fonts.dart';
 import 'package:smart_lock_app/screens/settings/settings_notifier.dart';
@@ -14,7 +17,7 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => SettingsNotifier(),
+      create: (_) => SettingsNotifier(context),
       child: Consumer<SettingsNotifier>(
         builder: (context, notifier, _) => _buildBody(context, notifier),
       ),
@@ -22,6 +25,9 @@ class SettingsScreen extends StatelessWidget {
   }
 
   Widget _buildBody(BuildContext context, SettingsNotifier notifier) {
+    final userCache = context.watch<UserCacheNotifier>();
+    final user = userCache.user;
+
     return Scaffold(
       backgroundColor: AppColors.backgroundSoft,
       body: SafeArea(
@@ -30,22 +36,25 @@ class SettingsScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _profileCard(notifier),
+              _profileCard(context, user, userCache.imageRefreshToken),
               14.verticalSpace,
               _sectionCard(
                 title: "Account",
                 children: [
                   _settingsTile(
-                      icon: LucideIcons.userRound,
-                      title: "Edit Profile",
-                      subtitle: "Update your name and personal details",
-                      onTap: () {
-                        Navigator.pushNamed(context, AppRoutes.editProfile);
-                      },
-                    ),
-                    _divider(),
-                    _settingsTile(
-                      icon: LucideIcons.lockKeyhole,
+                    icon: LucideIcons.userRound,
+                    title: "Edit Profile",
+                    subtitle: "Update your name and personal details",
+                    onTap: () async {
+                      final updated = await Navigator.pushNamed(context, AppRoutes.editProfile);
+                      if (updated == true && context.mounted) {
+                        context.read<UserCacheNotifier>().loadUser();
+                      }
+                    },
+                  ),
+                  _divider(),
+                  _settingsTile(
+                    icon: LucideIcons.lockKeyhole,
                     title: "Change Password",
                     subtitle: "Update your account password securely",
                     onTap: () {
@@ -104,7 +113,7 @@ class SettingsScreen extends StatelessWidget {
                     subtitle: "Use fingerprint or face ID to sign in",
                     value: notifier.biometricLogin,
                     onChanged: notifier.toggleBiometricLogin,
-                  )
+                  ),
                 ],
               ),
               14.verticalSpace,
@@ -115,7 +124,9 @@ class SettingsScreen extends StatelessWidget {
                     icon: LucideIcons.badgeQuestionMark,
                     title: "Help & Support",
                     subtitle: "Get assistance for your account",
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.pushNamed(context, AppRoutes.helpSupport);
+                    },
                   ),
                   _divider(),
                   _settingsTile(
@@ -134,7 +145,7 @@ class SettingsScreen extends StatelessWidget {
                 ],
               ),
               14.verticalSpace,
-              _logoutButton(),
+              _logoutButton(context, notifier),
               20.verticalSpace,
             ],
           ),
@@ -143,16 +154,16 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _profileCard(SettingsNotifier notifier) {
+  Widget _profileCard(BuildContext context, UserData? user, int imageRefreshToken) {
+    final userCache = context.watch<UserCacheNotifier>();
+    final user = userCache.user;
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            AppColors.primary,
-            AppColors.primaryDark,
-          ],
+          colors: [AppColors.primary, AppColors.primaryDark],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -171,14 +182,21 @@ class SettingsScreen extends StatelessWidget {
             width: 54.w,
             height: 54.w,
             decoration: BoxDecoration(
-              color: AppColors.white.withOpacity(0.12),
               borderRadius: BorderRadius.circular(16.r),
+              color: AppColors.white.withOpacity(0.12),
             ),
-            child: Icon(
-              LucideIcons.userRound,
-              color: AppColors.white,
-              size: 26.sp,
-            ),
+            clipBehavior: Clip.antiAlias,
+            child: (user?.profileImage?.isNotEmpty ?? false)
+                ? Image.network(
+              "${ApiConstants.apiImageUrl}${user!.profileImage!}?t=${userCache.imageRefreshToken}",
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Icon(
+                LucideIcons.userRound,
+                color: AppColors.primary,
+                size: 24.sp,
+              ),
+            )
+                : Icon(LucideIcons.userRound, color: AppColors.white, size: 24.sp),
           ),
           12.horizontalSpace,
           Expanded(
@@ -186,28 +204,26 @@ class SettingsScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  notifier.tenantName,
-                  style: AppFonts.text16.bold.style.copyWith(
-                    color: AppColors.white,
-                  ),
+                  user?.fullName ?? "",
+                  style: AppFonts.text16.bold.style.copyWith(color: AppColors.white),
                 ),
                 4.verticalSpace,
                 Text(
-                  notifier.unitName,
+                  "No.${user?.flatNo}, ${user?.floorNo} Floor, ${user?.buildingName}",
                   style: AppFonts.text12.medium.style.copyWith(
                     color: AppColors.white.withOpacity(0.85),
                   ),
                 ),
                 4.verticalSpace,
                 Text(
-                  notifier.mobileNumber,
+                  user?.phoneNumber ?? "",
                   style: AppFonts.text12.regular.style.copyWith(
                     color: AppColors.white.withOpacity(0.82),
                   ),
                 ),
                 2.verticalSpace,
                 Text(
-                  notifier.email,
+                  user?.email ?? "",
                   style: AppFonts.text12.regular.style.copyWith(
                     color: AppColors.white.withOpacity(0.82),
                   ),
@@ -220,25 +236,16 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _sectionCard({
-    required String title,
-    required List<Widget> children,
-  }) {
+  Widget _sectionCard({required String title, required List<Widget> children}) {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(
-          color: AppColors.primary.withOpacity(0.08),
-        ),
+        border: Border.all(color: AppColors.primary.withOpacity(0.08)),
         boxShadow: const [
-          BoxShadow(
-            color: AppColors.shadowColor,
-            blurRadius: 10,
-            offset: Offset(0, 3),
-          ),
+          BoxShadow(color: AppColors.shadowColor, blurRadius: 10, offset: Offset(0, 3)),
         ],
       ),
       child: Column(
@@ -248,9 +255,7 @@ class SettingsScreen extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 4.h),
             child: Text(
               title,
-              style: AppFonts.text12.bold.style.copyWith(
-                color: AppColors.textPrimary,
-              ),
+              style: AppFonts.text12.bold.style.copyWith(color: AppColors.textPrimary),
             ),
           ),
           6.verticalSpace,
@@ -280,11 +285,7 @@ class SettingsScreen extends StatelessWidget {
                 color: AppColors.primaryLight,
                 borderRadius: BorderRadius.circular(10.r),
               ),
-              child: Icon(
-                icon,
-                color: AppColors.primary,
-                size: 18.sp,
-              ),
+              child: Icon(icon, color: AppColors.primary, size: 18.sp),
             ),
             10.horizontalSpace,
             Expanded(
@@ -293,25 +294,17 @@ class SettingsScreen extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: AppFonts.text12.semiBold.style.copyWith(
-                      color: AppColors.textPrimary,
-                    ),
+                    style: AppFonts.text12.semiBold.style.copyWith(color: AppColors.textPrimary),
                   ),
                   3.verticalSpace,
                   Text(
                     subtitle,
-                    style: AppFonts.text10.regular.style.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
+                    style: AppFonts.text10.regular.style.copyWith(color: AppColors.textSecondary),
                   ),
                 ],
               ),
             ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: AppColors.textSecondary,
-              size: 20.sp,
-            ),
+            Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary, size: 20.sp),
           ],
         ),
       ),
@@ -336,11 +329,7 @@ class SettingsScreen extends StatelessWidget {
               color: AppColors.primaryLight,
               borderRadius: BorderRadius.circular(10.r),
             ),
-            child: Icon(
-              icon,
-              color: AppColors.primary,
-              size: 18.sp,
-            ),
+            child: Icon(icon, color: AppColors.primary, size: 18.sp),
           ),
           10.horizontalSpace,
           Expanded(
@@ -349,16 +338,12 @@ class SettingsScreen extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: AppFonts.text12.semiBold.style.copyWith(
-                    color: AppColors.textPrimary,
-                  ),
+                  style: AppFonts.text12.semiBold.style.copyWith(color: AppColors.textPrimary),
                 ),
                 3.verticalSpace,
                 Text(
                   subtitle,
-                  style: AppFonts.text10.regular.style.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
+                  style: AppFonts.text10.regular.style.copyWith(color: AppColors.textSecondary),
                 ),
               ],
             ),
@@ -380,46 +365,31 @@ class SettingsScreen extends StatelessWidget {
   }
 
   Widget _divider() {
-    return Divider(
-      height: 1,
-      color: AppColors.primary.withOpacity(0.08),
-    );
+    return Divider(height: 1, color: AppColors.primary.withOpacity(0.08));
   }
 
-  Widget _logoutButton() {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(
-          color: AppColors.error.withOpacity(0.14),
+  Widget _logoutButton(BuildContext context, SettingsNotifier notifier) {
+    return GestureDetector(
+      onTap: () => notifier.logoutFunctionality(context),
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(color: AppColors.error.withOpacity(0.14)),
+          boxShadow: const [
+            BoxShadow(color: AppColors.shadowColor, blurRadius: 8, offset: Offset(0, 3)),
+          ],
         ),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.shadowColor,
-            blurRadius: 8,
-            offset: Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            LucideIcons.logOut,
-            color: AppColors.error,
-            size: 18.sp,
-          ),
-          8.horizontalSpace,
-          Text(
-            "Logout",
-            style: AppFonts.text14.semiBold.style.copyWith(
-              color: AppColors.error,
-            ),
-          ),
-        ],
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(LucideIcons.logOut, color: AppColors.error, size: 18.sp),
+            8.horizontalSpace,
+            Text("Logout", style: AppFonts.text14.semiBold.style.copyWith(color: AppColors.error)),
+          ],
+        ),
       ),
     );
   }

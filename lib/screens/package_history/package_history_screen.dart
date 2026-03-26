@@ -62,10 +62,10 @@ class PackageHistoryScreen extends StatelessWidget {
       backgroundColor: AppColors.white,
       collapsedBackgroundColor: AppColors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18.r),
+        borderRadius: BorderRadius.circular(14.r),
       ),
       collapsedShape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18.r),
+        borderRadius: BorderRadius.circular(14.r),
       ),
       iconColor: AppColors.primary,
       collapsedIconColor: AppColors.primary,
@@ -248,6 +248,32 @@ class PackageHistoryScreen extends StatelessWidget {
   Widget _tableCard(BuildContext context, PackageHistoryNotifier notifier) {
     final rows = notifier.currentPageItems;
 
+    if (notifier.isLoading) {
+      return Container(
+        height: 220.h,
+        alignment: Alignment.center,
+        child: const CircularProgressIndicator(),
+      );
+    }
+
+    if (notifier.errorMessage.isNotEmpty) {
+      return Container(
+        padding: EdgeInsets.all(16.w),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(10.r),
+        ),
+        child: Center(
+          child: Text(
+            notifier.errorMessage,
+            style: AppFonts.text12.medium.style.copyWith(
+              color: AppColors.error,
+            ),
+          ),
+        ),
+      );
+    }
+
     return Container(
       decoration: BoxDecoration(
         color: AppColors.white,
@@ -287,7 +313,7 @@ class PackageHistoryScreen extends StatelessWidget {
                   color: AppColors.white,
                 ),
                 columns: const [
-                  DataColumn(label: Text("Package ID")),
+                  DataColumn(label: Text("ID")),
                   DataColumn(label: Text("Status")),
                   DataColumn(label: Text("Delivered On")),
                   DataColumn(label: Text("Timeline")),
@@ -327,22 +353,22 @@ class PackageHistoryScreen extends StatelessWidget {
                               context,
                               AppRoutes.packageDetail,
                               arguments: {
-                                "packageId": item.referenceId,
+                                "packageId": item.lockerDetailId,
                               },
                             );
                           },
                           child: Text(
-                            item.referenceId,
+                            notifier.getReferenceId(item),
                             style: AppFonts.text12.semiBold.style.copyWith(
                               color: AppColors.primary,
                             ),
                           ),
                         ),
                       ),
-                      DataCell(_statusChip(item.status)),
+                      DataCell(_statusChip(notifier.getStatusLabel(item))),
                       DataCell(
                         Text(
-                          notifier.formatDate(item.deliveredAt),
+                      notifier.deliveredOnLabel(item),
                           style: AppFonts.text12.medium.style.copyWith(
                             color: AppColors.textPrimary,
                           ),
@@ -358,7 +384,7 @@ class PackageHistoryScreen extends StatelessWidget {
                       ),
                       DataCell(
                         Text(
-                          item.lockerSize,
+                  notifier.getBoxSizeLabel(item),
                           style: AppFonts.text12.medium.style.copyWith(
                             color: AppColors.textPrimary,
                           ),
@@ -366,7 +392,7 @@ class PackageHistoryScreen extends StatelessWidget {
                       ),
                       DataCell(
                         Text(
-                          item.receiver,
+                        notifier.getReceiverName(item),
                           style: AppFonts.text12.medium.style.copyWith(
                             color: AppColors.textPrimary,
                           ),
@@ -570,15 +596,23 @@ class PackageHistoryScreen extends StatelessWidget {
         DropdownButtonFormField<String>(
           value: value,
           onChanged: onChanged,
+          isExpanded: true,
+          dropdownColor: AppColors.white,
+          borderRadius: BorderRadius.circular(14.r),
           style: AppFonts.text12.medium.style.copyWith(
             color: AppColors.textPrimary,
           ),
+          icon: Icon(
+            LucideIcons.chevronDown,
+            color: AppColors.primary,
+            size: 18.sp,
+          ),
           decoration: InputDecoration(
             filled: true,
-            fillColor: AppColors.background,
+            fillColor: AppColors.white,
             contentPadding: EdgeInsets.symmetric(
               horizontal: 14.w,
-              vertical: 14.h,
+              vertical: 12.h,
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14.r),
@@ -587,7 +621,7 @@ class PackageHistoryScreen extends StatelessWidget {
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14.r),
               borderSide: BorderSide(
-                color: AppColors.primary.withOpacity(0.08),
+                color: AppColors.primary.withOpacity(0.3),
               ),
             ),
             focusedBorder: OutlineInputBorder(
@@ -598,12 +632,14 @@ class PackageHistoryScreen extends StatelessWidget {
               ),
             ),
           ),
+          menuMaxHeight: 260.h,
           items: items
               .map(
                 (e) => DropdownMenuItem<String>(
               value: e,
               child: Text(
                 e,
+                overflow: TextOverflow.ellipsis,
                 style: AppFonts.text12.medium.style.copyWith(
                   color: AppColors.textPrimary,
                 ),
@@ -615,6 +651,7 @@ class PackageHistoryScreen extends StatelessWidget {
       ],
     );
   }
+
 
   Widget _primaryButton({
     required String text,

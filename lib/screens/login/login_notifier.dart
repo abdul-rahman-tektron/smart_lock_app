@@ -2,17 +2,21 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:provider/provider.dart';
 import 'package:smart_lock_app/core/model/error_response.dart';
 import 'package:smart_lock_app/core/model/login/login_request.dart';
 import 'package:smart_lock_app/core/model/login/login_response.dart';
 import 'package:smart_lock_app/core/model/login/remember_me.dart';
+import 'package:smart_lock_app/core/notifier/user_cache_notifier.dart';
 import 'package:smart_lock_app/core/remote/services/common_repository.dart';
 import 'package:smart_lock_app/res/strings.dart';
 import 'package:smart_lock_app/utils/routes.dart';
+import 'package:smart_lock_app/utils/utility/encrypt.dart';
 import 'package:smart_lock_app/utils/utility/env.dart';
 import 'package:smart_lock_app/utils/utility/hive_storage.dart';
+import 'package:smart_lock_app/utils/widgets/custom_toast.dart';
 
-class LoginNotifier extends ChangeNotifier {
+class LoginNotifier extends ChangeNotifier with CommonFunctions {
   final TextEditingController userNameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
@@ -95,9 +99,9 @@ class LoginNotifier extends ChangeNotifier {
       return 'Please enter your password';
     }
 
-    if (password.length < 6) {
-      return 'Password must be at least 6 characters';
-    }
+    // if (password.length < 6) {
+    //   return 'Password must be at least 6 characters';
+    // }
 
     return null;
   }
@@ -121,47 +125,44 @@ class LoginNotifier extends ChangeNotifier {
     try {
       final request = LoginRequest(
         email: userNameController.text.trim(),
-        password: passwordController.text.trim(),
+        password: encryptAES(passwordController.text.trim()),
       );
 
       final result = await CommonRepository.instance.apiLogin(request);
 
       if (result is LoginResponse && result.success == true && result.data != null) {
-        await _handleLoginSuccess(result);
+        await _handleLoginSuccess(context, result);
         if (!context.mounted) return;
         Navigator.pushReplacementNamed(context, AppRoutes.bottomScreen);
       } else if (result is ErrorResponse) {
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result.message ?? 'Login failed')),
-        );
+        ToastHelper.showError(result.message ?? 'Login failed', context: context);
       } else {
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Login failed')),
-        );
+        ToastHelper.showError('Login failed', context: context);
       }
     } catch (_) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Something went wrong')),
-      );
+      ToastHelper.showError('Something went wrong', context: context);
     } finally {
       isLoading = false;
       notifyListeners();
     }
   }
 
-  Future<void> _handleLoginSuccess(LoginResponse response) async {
+  Future<void> _handleLoginSuccess(BuildContext context, LoginResponse response) async {
     await HiveStorageService.setIsLoggedIn(true);
     await HiveStorageService.setUserData(jsonEncode(response.data?.toJson() ?? {}));
-    _handleRememberMe();
+
+    await _handleRememberMe();
 
     final token = response.data?.token;
-    print("token Data");
-    print(token);
     if (token != null && token.isNotEmpty) {
       await HiveStorageService.setAccessToken(token);
+    }
+
+    if (context.mounted) {
+      await context.read<UserCacheNotifier>().setUser(response.data);
     }
   }
 

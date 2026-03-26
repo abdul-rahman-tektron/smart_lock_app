@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:smart_lock_app/core/model/login/login_response.dart';
 import 'package:smart_lock_app/core/notifier/user_cache_notifier.dart';
+import 'package:smart_lock_app/res/api_constants.dart';
 import 'package:smart_lock_app/res/colors.dart';
 import 'package:smart_lock_app/res/fonts.dart';
 import 'package:smart_lock_app/res/images.dart';
@@ -103,13 +104,24 @@ class CustomDrawer extends StatelessWidget {
             width: 52.w,
             height: 52.w,
             decoration: BoxDecoration(
+              shape: BoxShape.circle,
               color: AppColors.primaryLight,
-              borderRadius: BorderRadius.circular(30.r),
             ),
-            child: Icon(
-              LucideIcons.user,
+            clipBehavior: Clip.antiAlias,
+            child: (user?.profileImage?.isNotEmpty ?? false)
+                ? Image.network(
+              "${ApiConstants.apiImageUrl}${user!.profileImage!}",
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Icon(
+                LucideIcons.userRound,
+                color: AppColors.primary,
+                size: 24.sp,
+              ),
+            )
+                : Icon(
+              LucideIcons.userRound,
               color: AppColors.primary,
-              size: 22.sp,
+              size: 24.sp,
             ),
           ),
           12.horizontalSpace,

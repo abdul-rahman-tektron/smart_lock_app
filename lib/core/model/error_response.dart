@@ -63,3 +63,32 @@ class ErrorListResponse {
     "Result": result == null ? [] : List<dynamic>.from(result!.map((x) => x)),
   };
 }
+
+CommonResponse commonResponseFromJson(String str) => CommonResponse.fromJson(json.decode(str));
+
+String commonResponseToJson(CommonResponse data) => json.encode(data.toJson());
+
+class CommonResponse {
+  bool? success;
+  String? message;
+  dynamic data;
+
+  CommonResponse({
+    this.success,
+    this.message,
+    this.data,
+  });
+
+  factory CommonResponse.fromJson(Map<String, dynamic> json) => CommonResponse(
+    success: json["success"],
+    message: json["message"],
+    data: json["data"],
+  );
+
+  Map<String, dynamic> toJson() => {
+    "success": success,
+    "message": message,
+    "data": data,
+  };
+}
+

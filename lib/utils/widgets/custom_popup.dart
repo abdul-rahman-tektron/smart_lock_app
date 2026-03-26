@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:smart_lock_app/core/model/error_response.dart';
+import 'package:smart_lock_app/core/model/forgot_password/forgot_password_request.dart';
 import 'package:smart_lock_app/core/remote/services/common_repository.dart';
 import 'package:smart_lock_app/res/colors.dart';
 import 'package:smart_lock_app/res/fonts.dart';
 import 'package:smart_lock_app/utils/regex.dart';
 import 'package:smart_lock_app/utils/routes.dart';
 import 'package:smart_lock_app/utils/widgets/custom_textfield.dart';
+import 'package:smart_lock_app/utils/widgets/custom_toast.dart';
 
 void showForgotPasswordPopup(BuildContext context) {
   final TextEditingController emailController = TextEditingController();
@@ -29,11 +32,7 @@ void showForgotPasswordPopup(BuildContext context) {
                 color: AppColors.white,
                 borderRadius: BorderRadius.circular(22.r),
                 boxShadow: const [
-                  BoxShadow(
-                    color: AppColors.shadowColor,
-                    blurRadius: 16,
-                    offset: Offset(0, 6),
-                  ),
+                  BoxShadow(color: AppColors.shadowColor, blurRadius: 16, offset: Offset(0, 6)),
                 ],
               ),
               child: Column(
@@ -45,10 +44,7 @@ void showForgotPasswordPopup(BuildContext context) {
                     padding: EdgeInsets.all(14.w),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [
-                          AppColors.primary,
-                          AppColors.primaryDark,
-                        ],
+                        colors: [AppColors.primary, AppColors.primaryDark],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -63,11 +59,7 @@ void showForgotPasswordPopup(BuildContext context) {
                             color: AppColors.white.withOpacity(0.14),
                             borderRadius: BorderRadius.circular(14.r),
                           ),
-                          child: Icon(
-                            LucideIcons.mailSearch,
-                            color: AppColors.white,
-                            size: 22.sp,
-                          ),
+                          child: Icon(LucideIcons.mailSearch, color: AppColors.white, size: 22.sp),
                         ),
                         10.horizontalSpace,
                         Expanded(
@@ -76,9 +68,7 @@ void showForgotPasswordPopup(BuildContext context) {
                             children: [
                               Text(
                                 "Forgot Password",
-                                style: AppFonts.text16.bold.style.copyWith(
-                                  color: AppColors.white,
-                                ),
+                                style: AppFonts.text16.bold.style.copyWith(color: AppColors.white),
                               ),
                               4.verticalSpace,
                               Text(
@@ -99,11 +89,7 @@ void showForgotPasswordPopup(BuildContext context) {
                               color: AppColors.white.withOpacity(0.12),
                               borderRadius: BorderRadius.circular(10.r),
                             ),
-                            child: Icon(
-                              Icons.close,
-                              color: AppColors.white,
-                              size: 18.sp,
-                            ),
+                            child: Icon(Icons.close, color: AppColors.white, size: 18.sp),
                           ),
                         ),
                       ],
@@ -126,11 +112,7 @@ void showForgotPasswordPopup(BuildContext context) {
                       CustomTextField(
                         controller: emailController,
                         title: "Email Address",
-                        prefixIcon: Icon(
-                          LucideIcons.mail,
-                          color: AppColors.primary,
-                          size: 18.sp,
-                        ),
+                        prefixIcon: Icon(LucideIcons.mail, color: AppColors.primary, size: 18.sp),
                         keyboardType: TextInputType.emailAddress,
                         expand: false,
                       ),
@@ -194,13 +176,9 @@ void showForgotPasswordPopup(BuildContext context) {
                         child: SizedBox(
                           height: 46.h,
                           child: OutlinedButton(
-                            onPressed: loading
-                                ? null
-                                : () => Navigator.pop(popupContext),
+                            onPressed: loading ? null : () => Navigator.pop(popupContext),
                             style: OutlinedButton.styleFrom(
-                              side: BorderSide(
-                                color: AppColors.primary.withOpacity(0.18),
-                              ),
+                              side: BorderSide(color: AppColors.primary.withOpacity(0.18)),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14.r),
                               ),
@@ -222,47 +200,60 @@ void showForgotPasswordPopup(BuildContext context) {
                             onPressed: loading
                                 ? null
                                 : () async {
-                              final email = emailController.text.trim();
-                              //
-                              // if (email.isEmpty) {
-                              //   ToastHelper.showError("Email is required");
-                              //   return;
-                              // }
-                              //
-                              // if (!RegExp(
-                              //   RegexPatterns.email,
-                              // ).hasMatch(email)) {
-                              //   ToastHelper.showError(
-                              //     "Please enter a valid email",
-                              //   );
-                              //   return;
-                              // }
-                              //
-                              // isLoading.value = true;
-                              //
-                              // final response = await CommonRepository
-                              //     .instance
-                              //     .apiForgetPassword(
-                              //   SendOtpRequest(email: email),
-                              // );
-                              //
-                              // isLoading.value = false;
-                              //
-                              // if (response == "OTP sent to your email.") {
-                                Navigator.pop(popupContext);
-                                Navigator.pushNamed(
-                                  context,
-                                  AppRoutes.otpVerification,
-                                  arguments: email,
-                                );
-                              // } else if (response is ErrorResponse) {
-                              //   ToastHelper.showError("Invalid email");
-                              // } else {
-                              //   ToastHelper.showError(
-                              //     "Failed to send OTP",
-                              //   );
-                              // }
-                            },
+                                    final email = emailController.text.trim();
+
+                                    if (email.isEmpty) {
+                                      ToastHelper.showError(
+                                        "Email is required",
+                                        context: popupContext,
+                                      );
+                                      return;
+                                    }
+
+                                    final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
+
+                                    if (!emailRegex.hasMatch(email)) {
+                                      ToastHelper.showError(
+                                        "Please enter a valid email address",
+                                        context: popupContext,
+                                      );
+                                      return;
+                                    }
+
+                                    isLoading.value = true;
+
+                                    final result = await CommonRepository.instance
+                                        .apiForgotPassword(ForgotPasswordRequest(email: email));
+
+                                    isLoading.value = false;
+
+                                    if (result is CommonResponse && result.success == true) {
+                                      if (!popupContext.mounted || !context.mounted) return;
+
+                                      Navigator.pop(popupContext);
+
+                                      Navigator.pushNamed(
+                                        context,
+                                        AppRoutes.otpVerification,
+                                        arguments: email,
+                                      );
+                                    } else if (result is ErrorResponse) {
+                                      ToastHelper.showError(
+                                        result.message ?? "Failed to send OTP",
+                                        context: popupContext,
+                                      );
+                                    } else if (result is CommonResponse) {
+                                      ToastHelper.showError(
+                                        result.message ?? "Failed to send OTP",
+                                        context: popupContext,
+                                      );
+                                    } else {
+                                      ToastHelper.showError(
+                                        "Failed to send OTP",
+                                        context: popupContext,
+                                      );
+                                    }
+                                  },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primary,
                               foregroundColor: AppColors.white,
@@ -273,22 +264,19 @@ void showForgotPasswordPopup(BuildContext context) {
                             ),
                             child: loading
                                 ? SizedBox(
-                              height: 18.h,
-                              width: 18.h,
-                              child: const CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  AppColors.white,
-                                ),
-                              ),
-                            )
+                                    height: 18.h,
+                                    width: 18.h,
+                                    child: const CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.white),
+                                    ),
+                                  )
                                 : Text(
-                              "Send OTP",
-                              style:
-                              AppFonts.text12.semiBold.style.copyWith(
-                                color: AppColors.white,
-                              ),
-                            ),
+                                    "Send OTP",
+                                    style: AppFonts.text12.semiBold.style.copyWith(
+                                      color: AppColors.white,
+                                    ),
+                                  ),
                           ),
                         ),
                       ),

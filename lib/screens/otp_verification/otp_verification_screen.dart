@@ -206,34 +206,34 @@ class OtpVerificationScreen extends StatelessWidget {
             ),
           ),
           16.verticalSpace,
-          Center(
-            child: notifier.isResendEnabled
-                ? TextButton(
-              onPressed: notifier.resendOtp,
-              child: Text(
-                "Resend Code",
-                style: AppFonts.text12.semiBold.style.copyWith(
-                  color: AppColors.primary,
-                ),
-              ),
-            )
-                : Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: 12.w,
-                vertical: 10.h,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.backgroundField,
-                borderRadius: BorderRadius.circular(12.r),
-              ),
-              child: Text(
-                "Resend available in ${notifier.secondsRemaining}s",
-                style: AppFonts.text12.medium.style.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
+      Center(
+        child: notifier.isResendEnabled
+            ? TextButton(
+          onPressed: () => notifier.resendOtp(context),
+          child: Text(
+            "Resend Code",
+            style: AppFonts.text12.semiBold.style.copyWith(
+              color: AppColors.primary,
             ),
           ),
+        )
+            : Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: 12.w,
+            vertical: 10.h,
+          ),
+          decoration: BoxDecoration(
+            color: AppColors.backgroundField,
+            borderRadius: BorderRadius.circular(12.r),
+          ),
+          child: Text(
+            "Resend available in ${notifier.secondsRemaining}s",
+            style: AppFonts.text12.medium.style.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+      ),
         ],
       ),
     );

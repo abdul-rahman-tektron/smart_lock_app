@@ -39,6 +39,7 @@ class UserData {
   String? fullName;
   String? phoneNumber;
   String? username;
+  String? profileImage;
   String? userType;
   bool? isActive;
   DateTime? createdOn;
@@ -55,6 +56,7 @@ class UserData {
     this.fullName,
     this.phoneNumber,
     this.username,
+    this.profileImage,
     this.userType,
     this.isActive,
     this.createdOn,
@@ -72,6 +74,7 @@ class UserData {
     fullName: json["fullName"],
     phoneNumber: json["phoneNumber"],
     username: json["username"],
+    profileImage: json["profileImage"],
     userType: json["userType"],
     isActive: json["isActive"],
     createdOn: json["createdOn"] == null ? null : DateTime.parse(json["createdOn"]),
@@ -89,6 +92,7 @@ class UserData {
     "fullName": fullName,
     "phoneNumber": phoneNumber,
     "username": username,
+    "profileImage": profileImage,
     "userType": userType,
     "isActive": isActive,
     "createdOn": createdOn?.toIso8601String(),

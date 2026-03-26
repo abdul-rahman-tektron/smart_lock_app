@@ -1,13 +1,15 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:smart_lock_app/core/base/base_notifier.dart';
+import 'package:smart_lock_app/core/notifier/user_cache_notifier.dart';
+import 'package:smart_lock_app/utils/routes.dart';
+import 'package:smart_lock_app/utils/utility/hive_storage.dart';
 
 class SettingsNotifier extends BaseChangeNotifier {
   bool pushNotifications = true;
   bool biometricLogin = false;
 
-  String tenantName = "Abdul Rahman";
-  String unitName = "Unit A-1204 • Aldar Residence";
-  String mobileNumber = "+971 50 123 4567";
-  String email = "abdulrahman@email.com";
+  SettingsNotifier(BuildContext context);
 
   void togglePushNotifications(bool value) {
     pushNotifications = value;
@@ -17,5 +19,15 @@ class SettingsNotifier extends BaseChangeNotifier {
   void toggleBiometricLogin(bool value) {
     biometricLogin = value;
     notifyListeners();
+  }
+
+  Future<void> logoutFunctionality(BuildContext context) async {
+    await HiveStorageService.clearOnLogout();
+    await context.read<UserCacheNotifier>().clearUser();
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      AppRoutes.login,
+          (route) => false,
+    );
   }
 }

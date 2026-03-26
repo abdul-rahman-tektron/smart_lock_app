@@ -21,7 +21,6 @@ class BaseRepository with ChangeNotifier {
 
   // Headers for form data (file upload)
   static const Map<String, String> _formDataHeaders = {
-    HttpHeaders.contentTypeHeader: "multipart/form-data",
     HttpHeaders.acceptHeader: "application/json",
   };
 

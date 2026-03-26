@@ -1,7 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:smart_lock_app/core/base/base_notifier.dart';
+import 'package:smart_lock_app/core/model/error_response.dart';
+import 'package:smart_lock_app/core/model/forgot_password/forgot_password_request.dart';
+import 'package:smart_lock_app/core/model/forgot_password/otp_verify_request.dart';
+import 'package:smart_lock_app/core/remote/services/common_repository.dart';
 import 'package:smart_lock_app/utils/routes.dart';
+import 'package:smart_lock_app/utils/widgets/custom_toast.dart';
 
 class OtpVerificationNotifier extends BaseChangeNotifier {
   final String? email;
@@ -45,7 +50,8 @@ class OtpVerificationNotifier extends BaseChangeNotifier {
   void onOtpChange(String value, int index) {
     if (value.length > 1) {
       otpControllers[index].text = value.substring(value.length - 1);
-      otpControllers[index].selection = const TextSelection.collapsed(offset: 1);
+      otpControllers[index].selection =
+      const TextSelection.collapsed(offset: 1);
     }
 
     if (value.isNotEmpty && index < otpLength - 1) {
@@ -73,73 +79,141 @@ class OtpVerificationNotifier extends BaseChangeNotifier {
     notifyListeners();
   }
 
-  String get enteredOtp {
-    return otpControllers.map((c) => c.text).join();
-  }
+  String get enteredOtp => otpControllers.map((c) => c.text).join();
 
   Future<void> verifyOtp(BuildContext context) async {
     final otp = enteredOtp;
+    final currentEmail = email?.trim() ?? "";
 
-    if (otp.length != otpLength) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please enter the complete OTP")),
-      );
+    if (currentEmail.isEmpty) {
+      ToastHelper.showError("Email is missing", context: context);
       return;
     }
 
+    if (otp.length != otpLength) {
+      ToastHelper.showError("Please enter the complete OTP", context: context);
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
     isLoading = true;
     notifyListeners();
 
     try {
-      await Future.delayed(const Duration(seconds: 1));
+      final request = OtpVerifyRequest(
+        email: currentEmail,
+        otp: otp,
+      );
 
-      /// TODO:
-      /// Replace with your real verify OTP API call
-      /// send:
-      /// email
-      /// otp
+      final result = await CommonRepository.instance.apiOTPVerification(request);
 
+      if (result is CommonResponse && result.success == true) {
+        if (!context.mounted) return;
+
+        ToastHelper.showSuccess(
+          result.message ?? "OTP verified successfully",
+          context: context,
+        );
+
+        Navigator.pushNamed(
+          context,
+          AppRoutes.resetPassword,
+          arguments: {
+            "email": currentEmail,
+            "otp": otp,
+          },
+        );
+      } else if (result is ErrorResponse) {
+        if (!context.mounted) return;
+        ToastHelper.showError(
+          result.message ?? "Incorrect OTP",
+          context: context,
+        );
+      } else if (result is CommonResponse) {
+        if (!context.mounted) return;
+        ToastHelper.showError(
+          result.message ?? "Incorrect OTP",
+          context: context,
+        );
+      } else {
+        if (!context.mounted) return;
+        ToastHelper.showError(
+          "Failed to verify OTP",
+          context: context,
+        );
+      }
+    } catch (_) {
       if (!context.mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("OTP verified successfully")),
-      );
-
-      Navigator.pushNamed(
-        context,
-        AppRoutes.resetPassword,
-        arguments: {
-          "email": email,
-          "otp": otp,
-        },
-      );
-    } catch (e) {
-      if (!context.mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Incorrect OTP")),
-      );
+      ToastHelper.showError("Something went wrong", context: context);
     } finally {
       isLoading = false;
       notifyListeners();
     }
   }
 
-  Future<void> resendOtp() async {
+  Future<void> resendOtp(BuildContext context) async {
+    final currentEmail = email?.trim() ?? "";
+
+    if (currentEmail.isEmpty) {
+      ToastHelper.showError("Email is missing", context: context);
+      return;
+    }
+
     isResendEnabled = false;
     secondsRemaining = 30;
     notifyListeners();
 
     try {
-      /// TODO:
-      /// Replace with your real resend OTP API call
-      /// send:
-      /// email
+      final result = await CommonRepository.instance.apiForgotPassword(
+        ForgotPasswordRequest(email: currentEmail),
+      );
 
-      _startResendCountdown();
-    } catch (e) {
+      if (result is CommonResponse && result.success == true) {
+        if (context.mounted) {
+          ToastHelper.showSuccess(
+            result.message ?? "OTP sent successfully",
+            context: context,
+          );
+        }
+        _startResendCountdown();
+      } else if (result is ErrorResponse) {
+        isResendEnabled = true;
+        notifyListeners();
+
+        if (context.mounted) {
+          ToastHelper.showError(
+            result.message ?? "Failed to resend OTP",
+            context: context,
+          );
+        }
+      } else if (result is CommonResponse) {
+        isResendEnabled = true;
+        notifyListeners();
+
+        if (context.mounted) {
+          ToastHelper.showError(
+            result.message ?? "Failed to resend OTP",
+            context: context,
+          );
+        }
+      } else {
+        isResendEnabled = true;
+        notifyListeners();
+
+        if (context.mounted) {
+          ToastHelper.showError(
+            "Failed to resend OTP",
+            context: context,
+          );
+        }
+      }
+    } catch (_) {
       isResendEnabled = true;
       notifyListeners();
+
+      if (context.mounted) {
+        ToastHelper.showError("Something went wrong", context: context);
+      }
     }
   }
 
